@@ -148,4 +148,12 @@ export interface Comp {
   strategy: Strategy
   createdAt: number
   updatedAt: number
+  /** Solo en memoria: presente si la comp vive en la base de datos */
+  cloud?: CloudMeta
+}
+
+export interface CloudMeta {
+  owner: string
+  author: string
+  isPublic: boolean
 }

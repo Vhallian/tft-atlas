@@ -2185,6 +2185,154 @@ code {
   color: #c9d1df;
 }
 
+/* ---------------- Nube / cuentas ---------------- */
+.user-btn {
+  padding: 3px 10px 3px 3px;
+  border-radius: 999px;
+}
+.avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(135deg, var(--gold), #b77d1c);
+  color: #1c1405;
+  font-weight: 800;
+  font-size: 12px;
+}
+.user-name {
+  max-width: 140px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.auth {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.auth p {
+  margin: 0;
+}
+.auth .row {
+  display: flex;
+  gap: 8px;
+}
+.auth-form {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.oauth {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.oauth-discord {
+  background: #5865f2;
+  border-color: #5865f2;
+  color: #fff;
+  font-weight: 600;
+}
+.oauth-google {
+  background: #fff;
+  border-color: #fff;
+  color: #1f1f1f;
+  font-weight: 600;
+}
+.auth-sep {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  color: var(--muted);
+  font-size: 12px;
+}
+.auth-sep::before,
+.auth-sep::after {
+  content: '';
+  flex: 1;
+  height: 1px;
+  background: var(--line);
+}
+.auth-msg {
+  font-size: 13px;
+  padding: 8px 10px;
+  border-radius: 8px;
+}
+.auth-msg.ok {
+  background: #0f2a1f;
+  color: #7fe3b0;
+}
+.auth-msg.err {
+  background: #2d1212;
+  color: #ff9a9a;
+}
+.auth-links {
+  display: flex;
+  gap: 12px;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+.banner {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  margin-bottom: 14px;
+  border-radius: var(--radius);
+  border: 1px solid #5a4a22;
+  background: linear-gradient(90deg, #211a0c, var(--bg-2));
+}
+.lib-section {
+  margin-bottom: 26px;
+}
+.lib-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+.lib-title {
+  font-size: 17px;
+  margin-bottom: 12px;
+}
+.lib-title-row .lib-title {
+  margin: 0;
+}
+.small-splash {
+  min-height: 120px;
+}
+.vis-badge {
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid var(--line-2);
+  color: var(--muted);
+  white-space: nowrap;
+}
+.vis-badge.pub,
+.vis-toggle.pub {
+  border-color: #1f6e57;
+  color: #7fe3b0;
+  background: #0f2a1f;
+}
+.save-ind {
+  align-self: center;
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.save-ind.saved {
+  color: var(--ok);
+}
+.save-ind.error {
+  color: var(--danger);
+}
+
 /* ---------------- Responsive ---------------- */
 @media (max-width: 1240px) {
   .editor-grid {
@@ -2204,7 +2352,8 @@ code {
     padding: 8px 12px;
     gap: 10px;
   }
-  .set-badge {
+  .set-badge,
+  .user-name {
     display: none;
   }
   .editor-grid,

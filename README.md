@@ -14,8 +14,10 @@ Constructor de composiciones de **Teamfight Tactics** (Set 18 · Enchanted Wilds
   prioridad (clave/bueno/situacional) y notas.
 - **Estrategia**: early/mid/late, posicionamiento, condiciones, consejos y sustituciones de unidades.
 - **Guía**: vista de lectura para consultar en partida, imprimir o compartir.
-- **Guardar y compartir**: todo se guarda en el navegador (localStorage). Exporta/importa JSON o comparte
-  una comp con un enlace (la comp va comprimida dentro de la URL).
+- **Cuentas y nube (opcional, con Supabase)**: cada usuario inicia sesión y sus comps se guardan solas en la base
+  de datos. Cada comp puede ser **privada** o **pública**; las públicas aparecen en **Comunidad** para todos.
+- **Sin cuenta**: todo funciona igual guardando en el navegador. Exporta/importa JSON o comparte
+  una comp con un enlace.
 
 ## Uso
 
@@ -24,6 +26,28 @@ npm install
 npm run dev        # http://localhost:5173
 npm run build      # genera dist/ (web estática, se puede subir a GitHub Pages, Netlify, etc.)
 ```
+
+## Base de datos y cuentas (Supabase)
+
+Sin configurar nada, la web funciona solo en local. Para activar cuentas y la comunidad:
+
+1. Crea un proyecto gratis en [supabase.com](https://supabase.com).
+2. **SQL Editor** → pega el contenido de [`supabase/schema.sql`](supabase/schema.sql) → **Run**.
+   Crea la tabla `comps` con seguridad por filas: cualquiera lee las públicas, solo el dueño edita o borra.
+3. **Authentication → URL Configuration**:
+   - *Site URL*: la dirección de Vercel (p. ej. `https://tft-atlas.vercel.app`)
+   - *Redirect URLs*: esa misma dirección y `http://localhost:5173`
+4. **Project Settings → API**: copia la *Project URL* y la *publishable key* (o *anon key*).
+5. En Vercel → **Settings → Environment Variables** añade:
+   - `VITE_SUPABASE_URL`
+   - `VITE_SUPABASE_PUBLISHABLE_KEY`
+   - opcional `VITE_SUPABASE_OAUTH=discord,google` si activas esos proveedores en *Authentication → Providers*.
+
+   Después haz **Redeploy** (las variables se leen al compilar).
+6. En local, copia `.env.example` a `.env.local` con los mismos valores.
+
+> El servidor de correo gratuito de Supabase envía pocos emails por hora. Para muchos registros, desactiva
+> *Confirm email* (Authentication → Providers → Email), usa Discord/Google o configura tu propio SMTP.
 
 ## Actualizar datos del juego
 

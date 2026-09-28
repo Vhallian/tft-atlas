@@ -40,7 +40,10 @@ export function GuideView({ comp, actions }: { comp: Comp; actions: React.ReactN
                 #{t}
               </span>
             ))}
-            <span className="small muted">Actualizada {timeAgo(comp.updatedAt)}</span>
+            <span className="small muted">
+              {comp.cloud?.author && <>por <b>{comp.cloud.author}</b> · </>}
+              Actualizada {timeAgo(comp.updatedAt)}
+            </span>
           </div>
           {carries.length > 0 && (
             <div className="guide-carries">

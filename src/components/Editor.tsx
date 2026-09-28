@@ -23,9 +23,11 @@ interface Props {
   onExport: () => void
   onDuplicate: () => void
   onDelete: () => void
+  /** Controles de nube: visibilidad, estado de guardado, subir… */
+  cloudControls?: React.ReactNode
 }
 
-export function Editor({ comp, update, onGuide, onShare, onExport, onDuplicate, onDelete }: Props) {
+export function Editor({ comp, update, onGuide, onShare, onExport, onDuplicate, onDelete, cloudControls }: Props) {
   const game = useGame()
   const [level, setLevel] = useState(comp.finalLevel)
   const [selected, setSelected] = useState<{ row: number; col: number } | null>(null)
@@ -145,6 +147,7 @@ export function Editor({ comp, update, onGuide, onShare, onExport, onDuplicate, 
             />
           </label>
           <div className="comp-actions">
+            {cloudControls}
             <button className="btn primary" onClick={onGuide}>
               👁 Ver guía
             </button>
