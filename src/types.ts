@@ -156,4 +156,5 @@ export interface CloudMeta {
   owner: string
   author: string
   isPublic: boolean
+  likes?: number
 }

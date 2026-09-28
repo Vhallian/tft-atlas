@@ -4,7 +4,8 @@ import { ToastProvider, TooltipProvider, useToast } from './components/common'
 import { Editor } from './components/Editor'
 import { GuideView } from './components/GuideView'
 import { Community, Library } from './components/Library'
-import { fetchComp, useCloud, type SaveStatus } from './lib/cloud'
+import { LikeButton } from './components/Like'
+import { CloudContext, fetchComp, useCloud, type SaveStatus } from './lib/cloud'
 import { GameDataProvider, useGame } from './lib/data'
 import { seedComps } from './lib/seed'
 import { decodeComp, encodeComp } from './lib/share'
@@ -98,6 +99,9 @@ function Main() {
   const found = routeId ? findComp(routeId) : undefined
   const needRemote = !!routeId && !found && cloud.enabled && cloud.ready && !cloud.loading
   useEffect(() => {
+    if (!routeId) setRemote(null)
+  }, [routeId])
+  useEffect(() => {
     if (!needRemote || !routeId || remote?.id === routeId) return
     setRemote({ id: routeId, comp: null, done: false })
     fetchComp(routeId, game.set)
@@ -160,9 +164,12 @@ function Main() {
   }
 
   const copyAction = (c: Comp) => (
-    <button className="btn primary" onClick={() => copyToMine(c)}>
-      ⧉ Copiar a mis comps
-    </button>
+    <>
+      <LikeButton comp={c} size="md" />
+      <button className="btn primary" onClick={() => copyToMine(c)}>
+        ⧉ Copiar a mis comps
+      </button>
+    </>
   )
 
   // ---------- vistas ----------
@@ -236,6 +243,7 @@ function Main() {
             <button className="btn ghost" onClick={() => window.print()}>
               🖨 Imprimir
             </button>
+            <LikeButton comp={comp} size="md" />
           </>
         }
       />
@@ -286,6 +294,7 @@ function Main() {
   }
 
   return (
+    <CloudContext.Provider value={{ cloud, requestLogin: () => setLoginOpen(true) }}>
     <div className="app">
       <header className="topbar">
         <a className="brand" href="#/">
@@ -327,6 +336,7 @@ function Main() {
       </footer>
       {loginOpen && <LoginModal onClose={() => setLoginOpen(false)} />}
     </div>
+    </CloudContext.Provider>
   )
 }
 

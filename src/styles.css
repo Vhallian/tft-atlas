@@ -2333,6 +2333,46 @@ code {
   color: var(--danger);
 }
 
+.like-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid var(--line-2);
+  background: var(--bg);
+  border-radius: 999px;
+  padding: 3px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+  transition: border-color 0.15s, color 0.15s, transform 0.1s;
+}
+.like-btn.md {
+  padding: 7px 14px;
+  font-size: 14px;
+}
+.like-btn:hover:not(:disabled) {
+  border-color: #e0607e;
+  color: #ff8fa8;
+}
+.like-btn:active {
+  transform: scale(0.94);
+}
+.like-btn.on {
+  color: #ff6b8b;
+  border-color: #7a2f41;
+  background: #2a1219;
+}
+.like-heart {
+  font-size: 1.15em;
+  line-height: 1;
+}
+.load-more {
+  display: flex;
+  justify-content: center;
+  margin-top: 18px;
+}
+
 /* ---------------- Responsive ---------------- */
 @media (max-width: 1240px) {
   .editor-grid {

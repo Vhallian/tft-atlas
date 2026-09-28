@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
-import { fetchPublic } from '../lib/cloud'
+import { fetchPublic, PAGE_SIZE, type CommunitySort } from '../lib/cloud'
 import { useGame, type Game } from '../lib/data'
 import { TIER_COLOR, TIERS } from '../lib/constants'
 import { computeTraits } from '../lib/traits'
@@ -7,6 +7,7 @@ import { normalize, timeAgo } from '../lib/util'
 import type { Comp } from '../types'
 import { Tip } from './common'
 import { ChampIcon, TraitCard, TraitHex } from './game'
+import { LikeButton } from './Like'
 
 interface Props {
   local: Comp[]
@@ -67,6 +68,7 @@ export function Library(p: Props) {
             </button>
           )}
           <div className="grow" />
+          {c.cloud?.isPublic && <LikeButton comp={c} />}
           <button className="icon-btn" title="Duplicar" onClick={() => p.onDuplicate(c.id)}>
             ⧉
           </button>
@@ -205,22 +207,45 @@ export function Community({ onGuide, onCopy }: { onGuide: (id: string) => void; 
   const game = useGame()
   const [q, setQ] = useState('')
   const [tier, setTier] = useState('')
+  const [sort, setSort] = useState<CommunitySort>('popular')
   const [comps, setComps] = useState<Comp[] | null>(null)
+  const [hasMore, setHasMore] = useState(false)
+  const [loadingMore, setLoadingMore] = useState(false)
   const [error, setError] = useState<string | null>(null)
 
-  // búsqueda en servidor por nombre/autor (con retardo); el resto de filtros en cliente
+  // búsqueda en servidor por nombre/autor (con retardo); el filtro de tier en cliente
   useEffect(() => {
     let cancelled = false
     const t = setTimeout(() => {
-      fetchPublic(game.set, q)
-        .then((list) => !cancelled && (setComps(list), setError(null)))
+      fetchPublic(game.set, q, sort)
+        .then((list) => {
+          if (cancelled) return
+          setComps(list)
+          setHasMore(list.length === PAGE_SIZE)
+          setError(null)
+        })
         .catch((e) => !cancelled && setError(String(e.message ?? e)))
     }, 250)
     return () => {
       cancelled = true
       clearTimeout(t)
     }
-  }, [q, game.set])
+  }, [q, sort, game.set])
+
+  async function loadMore() {
+    if (!comps) return
+    setLoadingMore(true)
+    try {
+      const more = await fetchPublic(game.set, q, sort, comps.length)
+      const seen = new Set(comps.map((c) => c.id))
+      setComps([...comps, ...more.filter((c) => !seen.has(c.id))])
+      setHasMore(more.length === PAGE_SIZE)
+    } catch (e) {
+      setError(String((e as Error).message ?? e))
+    } finally {
+      setLoadingMore(false)
+    }
+  }
 
   const list = (comps ?? []).filter((c) => !tier || c.tier === tier)
 
@@ -230,6 +255,14 @@ export function Community({ onGuide, onCopy }: { onGuide: (id: string) => void; 
         <div>
           <h1>Comunidad</h1>
           <p className="muted">Composiciones públicas de todos los jugadores · Set {game.set}</p>
+        </div>
+        <div className="seg">
+          <button className={sort === 'popular' ? 'on' : ''} onClick={() => setSort('popular')}>
+            ♥ Populares
+          </button>
+          <button className={sort === 'recent' ? 'on' : ''} onClick={() => setSort('recent')}>
+            🕒 Recientes
+          </button>
         </div>
       </div>
       <Filters q={q} setQ={setQ} tier={tier} setTier={setTier} />
@@ -245,25 +278,36 @@ export function Community({ onGuide, onCopy }: { onGuide: (id: string) => void; 
           <p className="muted">Publica una de las tuyas marcándola como «Pública» en el editor.</p>
         </div>
       ) : (
-        <div className="comp-grid">
-          {list.map((c) => (
-            <CompCard
-              key={c.id}
-              comp={c}
-              onOpen={() => onGuide(c.id)}
-              actions={
-                <>
-                  <button className="btn sm primary" onClick={() => onGuide(c.id)}>
-                    👁 Ver guía
-                  </button>
-                  <button className="btn sm" onClick={() => onCopy(c)}>
-                    ⧉ Copiar a mis comps
-                  </button>
-                </>
-              }
-            />
-          ))}
-        </div>
+        <>
+          <div className="comp-grid">
+            {list.map((c) => (
+              <CompCard
+                key={c.id}
+                comp={c}
+                onOpen={() => onGuide(c.id)}
+                actions={
+                  <>
+                    <button className="btn sm primary" onClick={() => onGuide(c.id)}>
+                      👁 Ver guía
+                    </button>
+                    <button className="btn sm" onClick={() => onCopy(c)}>
+                      ⧉ Copiar
+                    </button>
+                    <div className="grow" />
+                    <LikeButton comp={c} />
+                  </>
+                }
+              />
+            ))}
+          </div>
+          {hasMore && (
+            <div className="load-more">
+              <button className="btn" onClick={loadMore} disabled={loadingMore}>
+                {loadingMore ? 'Cargando…' : 'Cargar más'}
+              </button>
+            </div>
+          )}
+        </>
       )}
     </div>
   )

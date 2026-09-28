@@ -15,7 +15,8 @@ Constructor de composiciones de **Teamfight Tactics** (Set 18 · Enchanted Wilds
 - **Estrategia**: early/mid/late, posicionamiento, condiciones, consejos y sustituciones de unidades.
 - **Guía**: vista de lectura para consultar en partida, imprimir o compartir.
 - **Cuentas y nube (opcional, con Supabase)**: cada usuario inicia sesión y sus comps se guardan solas en la base
-  de datos. Cada comp puede ser **privada** o **pública**; las públicas aparecen en **Comunidad** para todos.
+  de datos. Cada comp puede ser **privada** o **pública**; las públicas aparecen en **Comunidad** para todos,
+  con **me gusta**, orden por *Populares* o *Recientes* y paginación.
 - **Sin cuenta**: todo funciona igual guardando en el navegador. Exporta/importa JSON o comparte
   una comp con un enlace.
 
@@ -45,6 +46,29 @@ Sin configurar nada, la web funciona solo en local. Para activar cuentas y la co
 
    Después haz **Redeploy** (las variables se leen al compilar).
 6. En local, copia `.env.example` a `.env.local` con los mismos valores.
+
+### Actualizar la base de datos
+
+Cuando cambie `supabase/schema.sql`, vuelve a pegarlo entero en el SQL Editor y pulsa **Run**.
+Es seguro ejecutarlo varias veces: no borra datos.
+
+### Iniciar sesión con Discord
+
+1. [discord.com/developers/applications](https://discord.com/developers/applications) → **New Application**.
+2. **OAuth2** → copia *Client ID* y *Client Secret* (Reset Secret) y añade como *Redirect*:
+   `https://<tu-proyecto>.supabase.co/auth/v1/callback`
+3. Supabase → **Authentication → Sign In / Providers → Discord**: actívalo y pega ID y Secret.
+4. Vercel → variable `VITE_SUPABASE_OAUTH=discord` → **Redeploy**.
+
+### Moderación
+
+Como dueño del proyecto puedes ocultar o borrar cualquier comp desde Supabase → **Table Editor → comps**
+(cambia `is_public` a `false` o borra la fila).
+
+### Vista previa al compartir
+
+Las etiquetas Open Graph de `index.html` y la imagen `public/og.png` apuntan a `https://tft-atlas-phi.vercel.app`.
+Si cambias de dominio, actualiza esas URLs.
 
 > El servidor de correo gratuito de Supabase envía pocos emails por hora. Para muchos registros, desactiva
 > *Confirm email* (Authentication → Providers → Email), usa Discord/Google o configura tu propio SMTP.

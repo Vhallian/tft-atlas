@@ -1,5 +1,5 @@
 import type { Session, User } from '@supabase/supabase-js'
-import { useCallback, useEffect, useRef, useState } from 'react'
+import { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react'
 import type { Comp } from '../types'
 import { sanitize } from './store'
 import { supabase } from './supabase'
@@ -18,10 +18,14 @@ interface Row {
   data: Partial<Comp>
   created_at: string
   updated_at: string
+  likes?: number
 }
 
-const COLUMNS = 'id, owner, author, name, set, tier, playstyle, is_public, data, created_at, updated_at'
+// '*' para seguir funcionando aunque la base de datos aún no tenga columnas nuevas
+const COLUMNS = '*'
 const SAVE_DELAY = 800
+export const PAGE_SIZE = 30
+export type CommunitySort = 'recent' | 'popular'
 
 export function displayName(user: User | null | undefined): string {
   if (!user) return ''
@@ -37,7 +41,7 @@ export function fromRow(r: Row, set: number): Comp {
       name: r.name,
       createdAt: Date.parse(r.created_at),
       updatedAt: Date.parse(r.updated_at),
-      cloud: { owner: r.owner, author: r.author, isPublic: r.is_public },
+      cloud: { owner: r.owner, author: r.author, isPublic: r.is_public, likes: r.likes ?? 0 },
     },
     r.set ?? set,
   )
@@ -59,13 +63,21 @@ function toRow(c: Comp, user: User) {
   }
 }
 
-/** Comps públicas de la comunidad */
-export async function fetchPublic(set: number, search = ''): Promise<Comp[]> {
-  if (!supabase) return []
-  let q = supabase.from('comps').select(COLUMNS).eq('is_public', true).eq('set', set)
+/** Comps públicas de la comunidad, paginadas */
+export async function fetchPublic(set: number, search = '', sort: CommunitySort = 'recent', offset = 0): Promise<Comp[]> {
+  const db = supabase
+  if (!db) return []
   const s = search.trim().replace(/[%_,()]/g, ' ')
-  if (s) q = q.or(`name.ilike.%${s}%,author.ilike.%${s}%`)
-  const { data, error } = await q.order('updated_at', { ascending: false }).limit(60)
+  // cada llamada crea una consulta nueva (los builders de supabase se modifican al encadenar)
+  const query = (byLikes: boolean) => {
+    let q = db.from('comps').select(COLUMNS).eq('is_public', true).eq('set', set)
+    if (s) q = q.or(`name.ilike.%${s}%,author.ilike.%${s}%`)
+    if (byLikes) q = q.order('likes', { ascending: false })
+    return q.order('updated_at', { ascending: false }).range(offset, offset + PAGE_SIZE - 1)
+  }
+  let { data, error } = await query(sort === 'popular')
+  // base de datos sin la columna `likes` (schema.sql aún no actualizado): orden por fecha
+  if (error && sort === 'popular') ({ data, error } = await query(false))
   if (error) throw error
   return (data as Row[]).map((r) => fromRow(r, set))
 }
@@ -89,6 +101,7 @@ export function useCloud(set: number, onError: (msg: string) => void) {
   const [comps, setComps] = useState<Comp[]>([])
   const [loading, setLoading] = useState(false)
   const [status, setStatus] = useState<SaveStatus>('idle')
+  const [liked, setLiked] = useState<Set<string>>(new Set())
   const compsRef = useRef<Comp[]>([])
   const timers = useRef(new Map<string, ReturnType<typeof setTimeout>>())
   const inFlight = useRef(0)
@@ -123,6 +136,7 @@ export function useCloud(set: number, onError: (msg: string) => void) {
   useEffect(() => {
     if (!supabase || !uid) {
       setAll([])
+      setLiked(new Set())
       return
     }
     let cancelled = false
@@ -138,6 +152,13 @@ export function useCloud(set: number, onError: (msg: string) => void) {
         if (error) errRef.current('No se pudieron cargar tus composiciones: ' + error.message)
         else setAll((data as Row[]).map((r) => fromRow(r, set)))
       })
+    // mis «me gusta» (si la tabla aún no existe, se ignora)
+    setLiked(new Set())
+    supabase
+      .from('comp_likes')
+      .select('comp_id')
+      .eq('user_id', uid)
+      .then(({ data }) => !cancelled && data && setLiked(new Set(data.map((d) => d.comp_id as string))))
     return () => {
       cancelled = true
     }
@@ -237,11 +258,40 @@ export function useCloud(set: number, onError: (msg: string) => void) {
     setAll(compsRef.current.map((c) => (c.cloud ? { ...c, cloud: { ...c.cloud, author: clean } } : c)))
   }, [])
 
+  /** Da o quita «me gusta». Devuelve el nuevo estado o null si falló. */
+  const likedRef = useRef(liked)
+  likedRef.current = liked
+  const toggleLike = useCallback(async (id: string): Promise<boolean | null> => {
+    if (!supabase || !userRef.current) return null
+    const was = likedRef.current.has(id)
+    const flip = (on: boolean) =>
+      setLiked((prev) => {
+        const n = new Set(prev)
+        if (on) n.add(id)
+        else n.delete(id)
+        return n
+      })
+    flip(!was)
+    const { error } = was
+      ? await supabase.from('comp_likes').delete().eq('comp_id', id).eq('user_id', userRef.current.id)
+      : await supabase.from('comp_likes').insert({ comp_id: id, user_id: userRef.current.id })
+    if (error) {
+      flip(was)
+      errRef.current('No se pudo guardar el «me gusta»')
+      return null
+    }
+    return !was
+  }, [])
+
   const signOut = useCallback(async () => {
     await supabase?.auth.signOut()
   }, [])
 
-  return { enabled, ready, user, comps, loading, status, update, add, remove, renameAuthor, signOut }
+  return { enabled, ready, user, comps, loading, status, liked, toggleLike, update, add, remove, renameAuthor, signOut }
 }
 
 export type Cloud = ReturnType<typeof useCloud>
+
+/** Acceso a la nube desde cualquier componente (botón de «me gusta», etc.) */
+export const CloudContext = createContext<{ cloud: Cloud; requestLogin: () => void } | null>(null)
+export const useCloudContext = () => useContext(CloudContext)
